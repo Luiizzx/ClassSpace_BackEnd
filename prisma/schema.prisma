@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model User {
+  @@map("users")
+
+  id Int @id @default(autoincrement())
+  
+  email String @unique
+  password String
+  name String
+  createdAat DateTime @default(now())
+
+  role Role
+
+  student   Student?
+  teacher   Teacher?
+}
+
+model Student {
+  @@map("students")
+
+  id Int @id @default(autoincrement())
+
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+
+  deliveries AssignmentDelivery[]
+}
+
+model Teacher {
+  @@map("teachers")
+
+  id Int @id @default(autoincrement())
+
+  userId Int @unique
+  user User @relation(fields: [userId], references: [id])
+
+  domainId Int
+  domain   Domain @relation(fields: [domainId], references: [id])
+
+  classes Class[]
+  assignments Assignment[]
+}
+
+model Admin {
+  @@map("admins")
+
+  id Int @id @default(autoincrement())
+  email String @unique
+  password String
+  name String
+
+  domainId Int
+  domain Domain @relation(fields: [domainId], references: [id])
+}
+
+model Domain {
+  @@map("domains")
+
+  id Int @id @default(autoincrement())
+  name String @unique
+
+  admins Admin[]
+  teachers Teacher[]
+}
+
+model Class {
+  @@map("classes")
+
+  id Int @id @default(autoincrement())
+  name String 
+  code String @unique
+  createdAt DateTime @default(now())
+  teacherId Int
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  assignments Assignment[]
+}
+
+model Assignment {
+  @@map("assignments")
+
+  id Int @id @default(autoincrement())
+  name String
+  description String?
+  startDate DateTime
+  dueDate DateTime
+
+  classId Int
+  class Class @relation(fields: [classId], references: [id])
+
+  teacherId Int
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  deliveries AssignmentDelivery[]
+}
+
+model AssignmentDelivery {
+  @@map("assignments_deliveries")
+
+  id Int @id @default(autoincrement())
+  submittedAt DateTime @default(now())
+  fileUrl String
+
+  studentId Int
+  student Student @relation(fields: [studentId], references: [id])
+
+  assignmentId Int
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  
+  @@unique([assignmentId, studentId])
+}
