@@ -3,7 +3,8 @@ import { createAcc, login } from './auth.controller.js';
 
 const router = Router();
 
-router.post('/login', login);
+router.post('/auth/login', login);
 
-router.post('create-acc', createAcc);
+router.post('/auth/create-acc', createAcc); 
+
 export default router;

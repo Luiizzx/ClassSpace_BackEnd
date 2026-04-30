@@ -3,11 +3,12 @@ import jwt from 'jsonwebtoken'
 import { env } from 'prisma/config';
 import { prisma } from '../../database/prisma.js';
 import { hashedPass } from '../../utils/hashedPass.js';
+import "dotenv/config"
 
 export async function login(req: Request, res: Response){
   const { email, password } = req.body;
-  
-  const user = await prisma.user.findFirst({where: {email: {equals: email}}});
+
+  const user = await prisma.user.findFirst({where: { email }});
 
   if (!user) {
     return res.status(404).json({
@@ -15,11 +16,11 @@ export async function login(req: Request, res: Response){
     });
   }
 
-  const hashed = await hashedPass(password);
+  // const hashed = await hashedPass(password);
 
-  if (user.password !== hashed) {
+  if (user.password !== password) {
     return res.status(401).json({
-      error: "Senha incorreta"
+      error: "Senha incorreta."
     });
   }
   

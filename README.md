@@ -2,17 +2,12 @@
 Esse é o BackEnd do projeto ClassSpace, feito com Node JS versão 25, Typescrit, Express e Prisma ORM.
 
 ## Instalação e execução
-Após clonar esse repositório, e acessá-lo digite no terminal:
+Após clonar esse repositório e acessá-lo, rode ambos os comandos abaixo:
 
 > npm install
+> npx tsc
 
-para fazer a instalação dos pacotes.
-
-Depois, rode o BackEnd usando:
-
-> npm run dev
-
-Você pode visualizar as rotas das requisições no arquivo routes.ts.
+para fazer a instalação dos pacotes e compilar os arquivos TypeScript.
 
 ## Configurações com .env
 
@@ -26,6 +21,14 @@ Caso deseje alterar, escolha uma nova porta no PORT do seu .env.
 
 Após criar o banco de dados e colocar as configurações no .env, rode as migrações para criar as tabelas com:
 
-> npx prisma migrate dev --name init
+> npx prisma migrate dev
 
-Isso criará uma pasta cujo nome será o momento (Timestamp) em que a migração rodou + "init", correspondente a criação de todas as tabelas iniciais.
+Isso cria todas as tabelas direto no banco configurado.
+
+## Rodando o BackEnd
+
+Após realizar todos esses passos, utilize o comando abaixo para rodar o BackEnd:
+
+> node dist/server.js
+
+As rotas estão separadas por módulo e comentadas no app.ts. 
