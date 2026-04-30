@@ -8,112 +8,107 @@ datasource db {
 }
 
 model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  role      UserRole
+  student   Student?
+  teacher   Teacher?
+
   @@map("users")
-
-  id Int @id @default(autoincrement())
-  
-  email String @unique
-  password String
-  name String
-  createdAat DateTime @default(now())
-
-  role String
-
-  student Student?
-  teacher Teacher?
 }
 
 model Student {
+  id          Int                  @id @default(autoincrement())
+  userId      Int                  @unique
+  deliveries  AssignmentDelivery[]
+  enrollments Enrollment[]
+  user        User                 @relation(fields: [userId], references: [id])
+
   @@map("students")
-
-  id Int @id @default(autoincrement())
-
-  userId Int @unique
-  user User @relation(fields: [userId], references: [id])
-
-  deliveries AssignmentDelivery[]
 }
 
 model Teacher {
-  @@map("teachers")
-
-  id Int @id @default(autoincrement())
-
-  userId Int @unique
-  user User @relation(fields: [userId], references: [id])
-
-  domainId Int
-  domain   Domain @relation(fields: [domainId], references: [id])
-
+  id      Int     @id @default(autoincrement())
+  userId  Int     @unique
   classes Class[]
-  assignments Assignment[]
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("teachers")
 }
 
 model Admin {
-  @@map("admins")
-
-  id Int @id @default(autoincrement())
-  email String @unique
+  id       Int    @id @default(autoincrement())
+  email    String @unique
   password String
-  name String
-
+  name     String
   domainId Int
-  domain Domain @relation(fields: [domainId], references: [id])
+  domain   Domain @relation(fields: [domainId], references: [id])
+
+  @@map("admins")
 }
 
 model Domain {
-  @@map("domains")
-
-  id Int @id @default(autoincrement())
-  name String @unique
-
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
   admins Admin[]
-  teachers Teacher[]
+
+  @@map("domains")
 }
 
 model Class {
-  @@map("classes")
-
-  id Int @id @default(autoincrement())
-  name String 
-  code String @unique
-  createdAt DateTime @default(now())
-  teacherId Int
-  teacher Teacher @relation(fields: [teacherId], references: [id])
-
+  id          Int          @id @default(autoincrement())
+  name        String
+  code        String       @unique
+  createdAt   DateTime     @default(now())
+  teacherId   Int
   assignments Assignment[]
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+
+  @@map("classes")
+}
+
+model Enrollment {
+  id        Int     @id @default(autoincrement())
+  studentId Int
+  classId   Int
+  class     Class   @relation(fields: [classId], references: [id])
+  student   Student @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, classId])
+  @@map("enrollments")
 }
 
 model Assignment {
-  @@map("assignments")
-
-  id Int @id @default(autoincrement())
-  name String
+  id          Int                  @id @default(autoincrement())
+  name        String
   description String?
-  startDate DateTime
-  dueDate DateTime
+  startDate   DateTime
+  dueDate     DateTime
+  classId     Int
+  class       Class                @relation(fields: [classId], references: [id])
+  deliveries  AssignmentDelivery[]
 
-  classId Int
-  class Class @relation(fields: [classId], references: [id])
-
-  teacherId Int
-  teacher Teacher @relation(fields: [teacherId], references: [id])
-
-  deliveries AssignmentDelivery[]
+  @@map("assignments")
 }
 
 model AssignmentDelivery {
-  @@map("assignments_deliveries")
-
-  id Int @id @default(autoincrement())
-  submittedAt DateTime @default(now())
-  fileUrl String
-
-  studentId Int
-  student Student @relation(fields: [studentId], references: [id])
-
+  id           Int        @id @default(autoincrement())
+  submittedAt  DateTime   @default(now())
+  fileUrl      String
+  studentId    Int
   assignmentId Int
-  assignment Assignment @relation(fields: [assignmentId], references: [id])
-  
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  student      Student    @relation(fields: [studentId], references: [id])
+
   @@unique([assignmentId, studentId])
+  @@map("assignments_deliveries")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
 }
