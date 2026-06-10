@@ -23,7 +23,7 @@ model User {
 model Student {
   id          Int                  @id @default(autoincrement())
   userId      Int                  @unique
-  deliveries  AssignmentDelivery[]
+  deliveries  AssignmentDelivery[] 
   enrollments Enrollment[]
   user        User                 @relation(fields: [userId], references: [id])
 
