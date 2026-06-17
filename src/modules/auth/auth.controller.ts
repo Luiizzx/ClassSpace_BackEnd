@@ -2,34 +2,27 @@ import { env } from 'prisma/config';
 import { prisma } from '../../database/prisma.js';
 import { hashedPass } from '../../utils/hashedPass.js';
 import { type Request, type Response } from 'express';
+import type { JwtPayload } from '../../interfaces/jwtPayload.js';
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs';
 import "dotenv/config"
-import type { JwtPayload } from '../../interfaces/jwtPayload.js';
 
 export async function auth(req: Request, res: Response){
   const cookieHeader = req.headers.cookie;
 
-  const token = cookieHeader
-    ?.split("; ")
-    .find(row => row.startsWith("token="))
-    ?.split("=")[1];
+  const token = cookieHeader?.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
 
-  if(!token){
-    return res.status(401).json({ message: "Usuário não autenticado" });
-  }
+  if(!token){ return res.status(401).json({}); }
 
   try{
     const payload = jwt.verify(token, env("JWT_SECRET")) as JwtPayload; 
     const data = await prisma.user.findFirst({ where: { id: payload.id }});
 
-    const userData = { id: data?.id, name: data?.name, role: data?.role };
+    const userData = { id: data?.id, name: data?.name, email: data?.email, role: data?.role };
 
     res.status(200).json(userData);
   }
   catch(error){
-    console.log(error);
-
     return res.status(401).json({ message: "Usuário não autenticado" });
   }
 }
@@ -40,15 +33,11 @@ export async function login(req: Request, res: Response){
   const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
-    return res.status(404).json({
-      error: "Não existe usuário com esse e-mail."
-    });
+    return res.status(404).json({ error: "Não existe usuário com esse e-mail." });
   }
 
   if (!await bcrypt.compare(password, user.password)){
-    return res.status(401).json({
-      error: "Senha incorreta."
-    });
+    return res.status(401).json({ error: "Senha incorreta." });
   }
 
   const token = jwt.sign(
@@ -64,13 +53,25 @@ export async function login(req: Request, res: Response){
     sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',  
   });
 
-  return res.status(200).json({ message: "Login bem sucedido" });
+  const userData = { id: user?.id, name: user?.name, email: user?.email, role: user?.role };
+
+  return res.status(200).json(userData);
+}
+
+export async function logout(req: Request, res: Response){
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  });
+
+  return res.status(200).json({});
 }
 
 export async function createAcc(req: Request, res: Response){
   const { name, email, password, role } = req.body;
 
-  let user = await prisma.user.findFirst({ where: {email: {equals: email}} });
+  let user = await prisma.user.findFirst({ where: { email: { equals: email } } });
 
   if(user){
     return res.status(404).json({
@@ -79,6 +80,7 @@ export async function createAcc(req: Request, res: Response){
   }
 
   const hashed = await hashedPass(password);
+  
   user = await prisma.user.create({
     data: {
       name: name, email: email,
@@ -89,9 +91,7 @@ export async function createAcc(req: Request, res: Response){
   if(role == "STUDENT"){
     await prisma.student.create({ data: { userId: user.id } });
   }
-  else{
-    await prisma.teacher.create({ data: { userId: user.id }});
-  }
+  else{ await prisma.teacher.create({ data: { userId: user.id }}); }
 
-  return res.json({ message: "Conta criada com sucesso! "});
+  return res.status(200).json({ message: "Conta criada com sucesso! "});
 }

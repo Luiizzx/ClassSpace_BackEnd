@@ -1,6 +1,9 @@
 import express from 'express';
 import swaggerUi from "swagger-ui-express"
 import authRouter from "./modules/auth/auth.routes.js"
+import teacherRouter from "./modules/teacher/teacher.routes.js"
+import userRouter from "./modules/user/user.routes.js"
+import studentRouter from "./modules/student/student.routes.js"
 import { swaggerSpec } from './swagger.js';
 
 const app = express();
@@ -22,6 +25,10 @@ app.use((req, res, next) => {
 });
 
 app.use(authRouter);
+app.use(userRouter);
+app.use(studentRouter);
+app.use(teacherRouter);
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 export default app;

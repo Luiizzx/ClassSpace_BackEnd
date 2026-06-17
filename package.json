@@ -32,6 +32,7 @@
     "pg": "^8.20.0",
     "prisma": "^7.7.0",
     "swagger-jsdoc": "^6.2.8",
+    "swagger-spec-to-pdf": "^1.1.0",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

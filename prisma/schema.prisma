@@ -7,6 +7,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  STUDENT
+  TEACHER
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
@@ -17,6 +22,8 @@ model User {
   student   Student?
   teacher   Teacher?
 
+  posts Post[]
+  replies Reply[]
   @@map("users")
 }
 
@@ -64,8 +71,11 @@ model Class {
   code        String       @unique
   createdAt   DateTime     @default(now())
   teacherId   Int
-  assignments Assignment[]
+
   teacher     Teacher      @relation(fields: [teacherId], references: [id])
+
+  posts       Post[]
+  assignments Assignment[]
   enrollments Enrollment[]
 
   @@map("classes")
@@ -75,6 +85,7 @@ model Enrollment {
   id        Int     @id @default(autoincrement())
   studentId Int
   classId   Int
+
   class     Class   @relation(fields: [classId], references: [id])
   student   Student @relation(fields: [studentId], references: [id])
 
@@ -89,6 +100,7 @@ model Assignment {
   startDate   DateTime
   dueDate     DateTime
   classId     Int
+
   class       Class                @relation(fields: [classId], references: [id])
   deliveries  AssignmentDelivery[]
 
@@ -101,6 +113,8 @@ model AssignmentDelivery {
   fileUrl      String
   studentId    Int
   assignmentId Int
+  delivered    Boolean
+
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   student      Student    @relation(fields: [studentId], references: [id])
 
@@ -108,7 +122,30 @@ model AssignmentDelivery {
   @@map("assignments_deliveries")
 }
 
-enum UserRole {
-  STUDENT
-  TEACHER
+model Post {
+  id            Int @id @default(autoincrement())
+  createdAt     DateTime @default(now())
+  text          String
+  userId        Int
+  classId       Int
+  
+  class         Class @relation(fields: [classId], references: [id])
+  user          User @relation(fields: [userId], references: [id])
+
+  replies       Reply[]
+  @@map("posts")
+}
+
+model Reply {
+  id             Int @id @default(autoincrement())
+  text           String
+  submittedAt    DateTime @default(now())
+  userId         Int 
+  postId         Int
+
+  user           User @relation(fields: [userId], references: [id])
+  post           Post @relation(fields: [postId], references: [id])
+
+
+  @@map("replies")
 }

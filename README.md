@@ -22,7 +22,7 @@ Caso deseje alterar, escolha uma nova porta no PORT do seu .env.
 Após criar o banco de dados e colocar as configurações no .env, rode as migrações para criar as tabelas com:
 
 > npx prisma migrate dev
-
+> npx prisma generate
 Isso cria todas as tabelas direto no banco configurado.
 
 ## Rodando o BackEnd
