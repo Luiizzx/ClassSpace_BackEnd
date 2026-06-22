@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs';
 import "dotenv/config"
 
+// autentica o usuário após login/criação de conta
+// e envia os dados
 export async function auth(req: Request, res: Response){
   const cookieHeader = req.headers.cookie;
 
@@ -33,11 +35,11 @@ export async function login(req: Request, res: Response){
   const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
-    return res.status(404).json({ error: "Não existe usuário com esse e-mail." });
+    return res.status(404).json({ message: "Não existe usuário com esse e-mail." });
   }
 
   if (!await bcrypt.compare(password, user.password)){
-    return res.status(401).json({ error: "Senha incorreta." });
+    return res.status(401).json({ message: "Senha incorreta." });
   }
 
   const token = jwt.sign(
