@@ -14,6 +14,8 @@ para fazer a instalação dos pacotes e compilar os arquivos TypeScript.
 Para que as requisições de fato funcionem, você precisa criar e configurar um banco de dados relacional.
 Após configurar o banco, cheque o .env.example e crie seu próprio .env baseado nele.
 
+Além disso, é importante incluir suas credenciais da Cloudflare no .env (ID da conta e S3 API).
+
 Por padrão, as requisições serão escutadas na porta 3000.
 Caso deseje alterar, escolha uma nova porta no PORT do seu .env.
 
@@ -23,6 +25,7 @@ Após criar o banco de dados e colocar as configurações no .env, rode as migra
 
 > npx prisma migrate dev
 > npx prisma generate
+
 Isso cria todas as tabelas direto no banco configurado.
 
 ## Rodando o BackEnd

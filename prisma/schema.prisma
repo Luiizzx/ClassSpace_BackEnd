@@ -110,16 +110,28 @@ model Assignment {
 model AssignmentDelivery {
   id           Int        @id @default(autoincrement())
   submittedAt  DateTime   @default(now())
-  fileUrl      String
   studentId    Int
   assignmentId Int
   delivered    Boolean
-
+  score        Float
+  
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   student      Student    @relation(fields: [studentId], references: [id])
 
+  deliveryFiles DeliveryFile[]
+  
   @@unique([assignmentId, studentId])
   @@map("assignments_deliveries")
+}
+
+model DeliveryFile {
+  id           Int                       @id @default(autoincrement())
+  deliveryId   Int
+  fileKey      String                    @default("")
+  fileName     String                    @default("")
+
+  assignmentDelivery AssignmentDelivery @relation(fields: [deliveryId], references: [id])
+  @@map("delivery_files")
 }
 
 model Post {

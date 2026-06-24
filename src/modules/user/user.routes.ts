@@ -6,7 +6,8 @@ import {
   getPost, 
   createPost,
   replyPost,
-  getAssignments
+  getAssignments,
+  getAssignment
  } from './user.controller.js';
 
 const router = Router();
@@ -22,5 +23,6 @@ router.post('/post/createPost/:classId', createPost);
 router.post('/post/replyPost/:classId/:postId', replyPost);
 
 router.get('/assignment/getAssignments/:classId', getAssignments);
+router.get('/assignment/getAssignment/:classId/:assignmentId', getAssignment)
 
 export default router;

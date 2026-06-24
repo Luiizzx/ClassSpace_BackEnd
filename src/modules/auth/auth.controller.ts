@@ -14,13 +14,19 @@ export async function auth(req: Request, res: Response){
 
   const token = cookieHeader?.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
 
-  if(!token){ return res.status(401).json({}); }
+  if(!token){ return res.status(401).json({ message: "Usuário não autenticado" }); }
 
   try{
     const payload = jwt.verify(token, env("JWT_SECRET")) as JwtPayload; 
     const data = await prisma.user.findFirst({ where: { id: payload.id }});
+    let userData;
 
-    const userData = { id: data?.id, name: data?.name, email: data?.email, role: data?.role };
+    if(data!.role == "TEACHER"){
+      userData = { id: data?.id, name: data?.name, role: data?.role };
+    }
+    else{
+      userData = { id: data?.id, name: data?.name, email: data?.email, role: data?.role };
+    }
 
     res.status(200).json(userData);
   }
@@ -35,11 +41,11 @@ export async function login(req: Request, res: Response){
   const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
-    return res.status(404).json({ message: "Não existe usuário com esse e-mail." });
+    return res.status(400).json({ message: "Não existe usuário com esse e-mail." });
   }
 
   if (!await bcrypt.compare(password, user.password)){
-    return res.status(401).json({ message: "Senha incorreta." });
+    return res.status(400).json({ message: "Senha incorreta." });
   }
 
   const token = jwt.sign(

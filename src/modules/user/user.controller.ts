@@ -211,5 +211,5 @@ export async function getAssignment(req: Request, res: Response){
     return res.status(404).json({ message: "Não existe tarefa com esse ID" });
   }
 
-  return res.status(200).json(assignment);
+  return res.status(200).json({ className: classObj.name, assignment });
 }
