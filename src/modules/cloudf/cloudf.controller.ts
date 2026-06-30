@@ -12,11 +12,11 @@ export async function generateUrl(req: Request, res: Response){
     const { fileName, contentType, userId } = req.body;
 
     if (!fileName || !contentType) {
-      return res.status(400).json({ error: "fileName and contentType are required" });
+      return res.status(400).json({ error: "Nome e tipo de arquivo devem vir no BODY" });
     }
 
-    const student = await prisma.student.findFirst({ where: { userId: userId } });
-    if(!student){ return res.status(404).json({ message: "Usuário não existe ou não é estudante" }); }
+    const user = await prisma.user.findFirst({ where: { id: userId } });
+    if(!user){ return res.status(404).json({ message: "Usuário não existe" }); }
 
     const safeName = fileName.replace(/[^\w.\-]/g, "_");
     const key = `uploads/${crypto.randomUUID()}-${safeName}`;
@@ -37,6 +37,6 @@ export async function generateUrl(req: Request, res: Response){
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Failed to generate upload URL" });
+    return res.status(500).json({ error: "Erro ao tentar gerar URL" });
   }
 }

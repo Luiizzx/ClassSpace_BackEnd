@@ -205,7 +205,7 @@ export async function getAssignment(req: Request, res: Response){
     return res.status(404).json({ message: "Turma não existe" });
   }
 
-  const assignment = await prisma.assignment.findFirst({ where: { id: assignmentId } });
+  const assignment = await prisma.assignment.findFirst({ where: { id: assignmentId }, include: { files: true } });
 
   if(!assignment){
     return res.status(404).json({ message: "Não existe tarefa com esse ID" });

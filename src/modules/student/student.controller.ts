@@ -70,13 +70,11 @@ export async function getAssignmentDelivery(req: Request, res: Response){
 
 export async function createAssignmentDelivery(req: Request, res: Response) {
   const assignmentId = Number(req.params.assignmentId);
-  const { userId, fileKeys } = req.body;
+  const { userId, files } = req.body;
 
   const assignment = await prisma.assignment.findFirst({
     where: { id: assignmentId }
   });
-
-  console.log(fileKeys);
 
   if (!assignment) {
     return res.status(404).json({ message: "Não existe tarefa com esse ID" });
@@ -105,57 +103,91 @@ export async function createAssignmentDelivery(req: Request, res: Response) {
       }
     });
 
-    if (Array.isArray(fileKeys) && fileKeys.length > 0) {
+
+    if (Array.isArray(files) && files.length > 0) {
       await prisma.deliveryFile.createMany({
-        data: fileKeys.map((key: string) => ({
+        data: files.map((file: { key: string; name: string }) => ({
           deliveryId: newDelivery.id,
-          fileKey: key
+          fileKey: file.key,
+          fileName: file.name
         }))
       });
     }
 
     return res.status(201).json({ message: "Entrega criada com sucesso" });
   }
+  
+  return res.status(200).json({ message: "Entrega atualizada com sucesso" });
+}
 
-  const existingFiles = await prisma.deliveryFile.findMany({
-    where: { deliveryId: delivery.id }
+export async function updateAssignmentDelivery(req: Request, res: Response){
+  const assignmentId = Number(req.params.assignmentId);
+  const { userId, status, toAdd, toRemove } = req.body;
+
+  const assignment = await prisma.assignment.findFirst({
+    where: { id: assignmentId }
   });
 
-  const existingKeys = existingFiles.map(f => f.fileKey).filter(Boolean);
+  if (!assignment) {
+    return res.status(404).json({ message: "Não existe tarefa com esse ID" });
+  }
 
-  const incomingKeys = Array.isArray(fileKeys) ? fileKeys : [];
+  const student = await prisma.student.findFirst({ where: { userId: userId } });
 
-  // files to add
-  const toAdd = incomingKeys.filter(k => !existingKeys.includes(k));
+  if (!student) {
+    return res.status(404).json({ message: "Usuário não existe ou não é aluno" });
+  }
 
-  // files to remove
-  const toRemove = existingKeys.filter(k => !incomingKeys.includes(k));
+  const delivery = await prisma.assignmentDelivery.findFirst({
+    where: {
+      assignmentId,
+      studentId: student.id
+    }
+  });
 
-  // add new files
+  if(!delivery){
+    return res.status(404).json({ message: "Esse aluno ainda não fez a entrega dessa tarefa" });
+  }
+
+  // se status for falso basta atualizar status e data
+  // sem mexer nos anexos, caso aluno queira enviar novamente
+  if(!status){
+    await prisma.assignmentDelivery.update({ 
+      where: { id: delivery.id },
+      data: {
+        submittedAt: null,
+        delivered: false
+      }
+    });
+
+    return res.sendStatus(204);
+
+  }
+
   if (toAdd.length > 0) {
     await prisma.deliveryFile.createMany({
-      data: toAdd.map((key: string) => ({
+      data: toAdd.map((file: { key: string; name: string }) => ({
         deliveryId: delivery.id,
-        fileKey: key
+        fileKey: file.key,
+        fileName: file.name
       }))
     });
   }
 
-  // remove deleted files
+  const keysToRemove = toRemove.map((f: { fileKey: string; }) => f.fileKey).filter(Boolean);
   if (toRemove.length > 0) {
     await prisma.deliveryFile.deleteMany({
       where: {
         deliveryId: delivery.id,
-        fileKey: { in: toRemove }
+        fileKey: { in: keysToRemove }
       }
     });
   }
 
-  // optional: mark as delivered again
   await prisma.assignmentDelivery.update({
     where: { id: delivery.id },
-    data: { delivered: true }
+    data: { delivered: true, submittedAt: new Date() }
   });
-
-  return res.status(200).json({ message: "Entrega atualizada com sucesso" });
+  
+  return res.sendStatus(204);
 }

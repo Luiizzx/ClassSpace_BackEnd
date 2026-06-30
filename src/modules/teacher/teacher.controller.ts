@@ -49,12 +49,22 @@ export async function createClass(req: Request, res: Response){
 export async function createAssignment(req: Request, res: Response){
   const classId = Number(req.params.classId);
 
-  const { name, description, startDate, dueDate } = req.body;
+  const { userId, name, description, startDate, dueDate, files } = req.body;
+
+  const teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
+
+  if(!teacher){
+    return res.status(404).json({ message: "Não existe professor com esse ID de usuário" });
+  }
 
   const classObj = await prisma.class.findFirst({ where: { id: classId } });
 
   if(!classObj){
     return res.status(404).json({ message: "Não existe turma com esse ID " });
+  }
+
+  if(classObj.teacherId !== teacher!.id){
+    return res.status(401).json({ message: "Você não tem permissão para criar tarefas nessa turma" });
   }
 
   const assignment = await prisma.assignment.create({ 
@@ -67,5 +77,88 @@ export async function createAssignment(req: Request, res: Response){
     }
   });
 
+  console.log(files);
+
+  if(files.length > 0){
+    await prisma.assignmentFile.createMany({
+      data: files.map((file: { key: string, name: string }) => ({
+        assignmentId: assignment.id,
+        fileKey: file.key,
+        fileName: file.name
+      }))
+    });
+  }
+
   return res.status(201).json(assignment);
+}
+
+export async function getAllDeliveries(req: Request, res: Response){
+  const assignmentId = Number(req.params.assignmentId);
+
+  const userId = Number(req.query.userId);
+
+  if(!userId){
+    return res.status(404).json({ messsage: "ID do usuário não encontrado na query" });
+  }
+
+  const teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
+
+  if(!teacher){
+    return res.status(404).json({ message: "Usuário não existe ou não é um professor" });
+  }
+
+  const classObj = await prisma.class.findFirst({ where: { teacherId: teacher.id } });
+
+  if(!classObj){
+    return res.status(401).json({ message: "Você não pode visualizar as entregas pois não criou essa turma" });
+  }
+
+  const assignment = await prisma.assignment.findFirst({ where: { id: assignmentId } });
+
+  if(!assignment){
+    return res.status(404).json({ message: "Não existe tarefa com esse ID" });
+  }
+
+  const deliveries = await prisma.assignmentDelivery.findMany({ 
+    where: { assignmentId: assignmentId }, 
+    include: { 
+      deliveryFiles: true, 
+      student: {
+        include: {
+          user: true
+        }
+      } 
+    },
+  });
+
+  return res.status(200).json({ assignmentName: assignment.name, deliveries });
+}
+
+export async function updateScore(req: Request, res: Response){
+  const classId = Number(req.params.classId);
+  const assignmentId = Number(req.params.assignmentId);
+
+  const { userId, studentId } = req.body;
+
+  const teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
+
+  if(!teacher){
+    return res.status(401).json({ message: "Esse usuário não é um professor" })
+  }
+
+  const classObj = await prisma.class.findFirst({ 
+    where: { 
+      AND: [
+        { id: classId },
+        { teacherId: teacher.id }
+      ] 
+    } 
+  });
+  
+
+  if(!classObj){
+    return res.status(404).json({ message: "Não existe turma com esse ID criada por esse professor" });
+  }
+
+  return res.sendStatus(204);
 }

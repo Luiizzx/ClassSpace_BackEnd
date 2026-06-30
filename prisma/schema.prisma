@@ -103,13 +103,25 @@ model Assignment {
 
   class       Class                @relation(fields: [classId], references: [id])
   deliveries  AssignmentDelivery[]
+  files       AssignmentFile[]
 
   @@map("assignments")
 }
 
+model AssignmentFile {
+  id           Int        @id @default(autoincrement())
+  assignmentId Int
+  fileKey      String
+  fileName     String
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])   
+
+  @@map("assignment_files")
+}
+
 model AssignmentDelivery {
   id           Int        @id @default(autoincrement())
-  submittedAt  DateTime   @default(now())
+  submittedAt  DateTime?  @default(now())
   studentId    Int
   assignmentId Int
   delivered    Boolean
