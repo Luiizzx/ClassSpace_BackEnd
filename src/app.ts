@@ -34,7 +34,7 @@ app.use(authRouter);
 
 // verifica se o usuário está autenticado
 // quando usuário faz uma requisição
-// app.use(authMiddleware);
+app.use(authMiddleware);
 
 app.use(userRouter);
 app.use(studentRouter);

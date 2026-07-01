@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../../database/prisma.js";
+import { Readable } from "node:stream";
 
 export async function getAllClasses(req: Request, res: Response){
   let profile;
@@ -212,4 +213,49 @@ export async function getAssignment(req: Request, res: Response){
   }
 
   return res.status(200).json({ className: classObj.name, assignment });
+}
+
+export async function getDeliveryFile(req: Request, res: Response) {
+  const fileId = Number(req.params.fileId);
+
+  const file = await prisma.deliveryFile.findFirst({
+    where: { id: fileId },
+  });
+
+  if (!file) {
+    return res.status(404).json({
+      message: "Não existe arquivo com esse ID",
+    });
+  }
+
+  const response = await fetch(
+    `https://pub-72880818218741b5952216f9dd9c1f1e.r2.dev/${file.fileKey}`
+  );
+
+  if (!response.ok || !response.body) {
+    return res.sendStatus(404);
+  }
+
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${file.fileName}"`
+  );
+
+  res.setHeader(
+    "Content-Type",
+    response.headers.get("content-type") ??
+      "application/octet-stream"
+  );
+
+  const reader = response.body!.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) break;
+
+    res.write(value);
+  }
+
+  res.end();
 }
