@@ -25,7 +25,6 @@
     "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
@@ -34,7 +33,6 @@
     "pg": "^8.20.0",
     "prisma": "^7.7.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-spec-to-pdf": "^1.1.0",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {

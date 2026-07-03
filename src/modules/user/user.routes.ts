@@ -8,7 +8,7 @@ import {
   replyPost,
   getAssignments,
   getAssignment,
-  getDeliveryFile
+  getFile
  } from './user.controller.js';
 
 const router = Router();
@@ -24,7 +24,7 @@ router.post('/post/createPost/:classId', createPost);
 router.post('/post/replyPost/:classId/:postId', replyPost);
 
 router.get('/assignment/getAssignments/:classId', getAssignments);
-router.get('/assignment/getAssignment/:classId/:assignmentId', getAssignment)
+router.get('/assignment/getAssignment/:classId/:assignmentId', getAssignment);
 
-router.get('/file/getDeliveryFile/:fileId', getDeliveryFile)
+router.get('/file/getFile/:fileId', getFile);
 export default router;

@@ -70,7 +70,7 @@ export async function getParticipants(req: Request, res: Response) {
 
 export async function createPost(req: Request, res: Response){
   const classId = Number(req.params.classId);
-  const { userId, text } = req.body;
+  const { userId, text, files } = req.body;
 
   const user = await prisma.user.findFirst({ where: { id: userId } });
 
@@ -94,9 +94,19 @@ export async function createPost(req: Request, res: Response){
       classId: classId,
       text: text
     }
-  })
+  });
 
-  return res.status(201).json(post);
+  if(files.length > 0){
+    await prisma.postFile.createMany({ 
+      data: files.map((file: { key: string, name: string}) => ({
+        postId: post.id,
+        fileKey: file.key,
+        fileName: file.name
+      }))
+    });
+  }
+
+  return res.status(201).json({ post, files });
 }
 
 export async function getAllPosts(req: Request, res: Response) {
@@ -113,7 +123,8 @@ export async function getAllPosts(req: Request, res: Response) {
     include: {
       user: {
         select: { name: true },
-      }
+      },
+      files: true
     }
   });
 
@@ -130,7 +141,7 @@ export async function getPost(req: Request, res: Response){
     return res.status(404).json({ message: "Turma não existe." })
   }
 
-  const post = await prisma.post.findFirst({ where: { id: postId } });
+  const post = await prisma.post.findFirst({ where: { id: postId }, include: { files: true } });
 
   if(!post){
     return res.status(404).json({ message: "Postagem não existe." });
@@ -215,12 +226,21 @@ export async function getAssignment(req: Request, res: Response){
   return res.status(200).json({ className: classObj.name, assignment });
 }
 
-export async function getDeliveryFile(req: Request, res: Response) {
+export async function getFile(req: Request, res: Response) {
   const fileId = Number(req.params.fileId);
 
-  const file = await prisma.deliveryFile.findFirst({
-    where: { id: fileId },
-  });
+  const type = req.query.type;
+
+  let file;
+  if(type == "ASSIGNMENT"){
+    file = await prisma.assignmentFile.findFirst({ where: { id: fileId } });
+  }
+  else if(type == "POST"){
+    file = await prisma.postFile.findFirst({ where: { id: fileId } });
+  }
+  else{
+    file = await prisma.deliveryFile.findFirst({ where: { id: fileId } });
+  }
 
   if (!file) {
     return res.status(404).json({
