@@ -99,7 +99,7 @@ export async function deleteAssignment(req: Request, res: Response){
   }
 
   const teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
-
+  
   if(!teacher){
     return res.status(404).json({ message: "Usuário não existe ou não é um professor" });
   }
@@ -130,16 +130,22 @@ export async function getAllDeliveries(req: Request, res: Response){
     return res.status(404).json({ messsage: "ID do usuário não encontrado na query" });
   }
 
-  const teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
-
+  let admin;
+  let teacher = await prisma.teacher.findFirst({ where: { userId: userId } });
+  
   if(!teacher){
-    return res.status(404).json({ message: "Usuário não existe ou não é um professor" });
+    admin = await prisma.admin.findFirst({ where: { userId: userId } });
+
+    if(!admin){
+      return res.status(404).json({ message: "Usuário não existe ou não tem permissão" });
+    }
   }
+  else{
+    const classObj = await prisma.class.findFirst({ where: { teacherId: teacher.id } });
 
-  const classObj = await prisma.class.findFirst({ where: { teacherId: teacher.id } });
-
-  if(!classObj){
-    return res.status(401).json({ message: "Você não pode visualizar as entregas pois não criou essa turma" });
+    if(!classObj){
+      return res.status(401).json({ message: "Você não pode visualizar as entregas pois não criou essa turma" });
+    }
   }
 
   const assignment = await prisma.assignment.findFirst({ where: { id: assignmentId } });
@@ -159,7 +165,14 @@ export async function getAllDeliveries(req: Request, res: Response){
     },
   });
 
-  return res.status(200).json({ assignmentName: assignment.name, deliveries });
+  const deliveryStudents = deliveries.map(d => d.studentId);
+
+  const studentsWithoutDelivery = await prisma.student.findMany({ 
+    where: { id: { notIn: deliveryStudents } },
+    include: { user: { select: { name: true } } }
+  });
+
+  return res.status(200).json({ assignmentName: assignment.name, deliveries, studentsWithoutDelivery });
 }
 
 export async function getDeliveryFiles(req: Request, res: Response){

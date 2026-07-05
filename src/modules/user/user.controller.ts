@@ -1,30 +1,101 @@
-import type { Request, Response } from "express";
 import { prisma } from "../../database/prisma.js";
-import { Readable } from "node:stream";
+import type { Request, Response } from "express";
 
-export async function getAllClasses(req: Request, res: Response){
-  let profile;
-  let data;
-
+export async function getAllClasses(req: Request, res: Response) {
   const id = Number(req.params.userId);
-  const user = await prisma.user.findFirst({ where: { id: id } });
 
-  if(!user){
+  const user = await prisma.user.findFirst({
+    where: { id }
+  });
+
+  if (!user) {
     return res.status(404).json({ message: "Usuário não existe" });
   }
 
-  if (user.role == "STUDENT"){
-    profile = await prisma.student.findFirst({ where: { userId: id } });
-    
-    const enrollments = await prisma.enrollment.findMany({ where: { studentId: profile!.id } });
+  let data = [];
+
+  if (user.role === "STUDENT") {
+    const profile = await prisma.student.findFirst({
+      where: { userId: id }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ message: "Perfil de estudante não encontrado." });
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: { studentId: profile.id }
+    });
 
     const classIds = enrollments.map(e => e.classId);
-    data = await prisma.class.findMany({ where: { id: { in: classIds } } });
-  }
-  else{
-    profile = await prisma.teacher.findFirst({ where: { userId: id } });
 
-    data = await prisma.class.findMany({ where: { teacherId: profile!.id  } });
+    data = await prisma.class.findMany({
+      where: {
+        id: {
+          in: classIds
+        }
+      }
+    });
+  }
+
+  else if (user.role === "TEACHER") {
+    const profile = await prisma.teacher.findFirst({
+      where: { userId: id }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ message: "Perfil de professor não encontrado." });
+    }
+
+    data = await prisma.class.findMany({
+      where: {
+        teacherId: profile.id
+      }
+    });
+  }
+
+  else if (user.role === "ADMIN") {
+    const profile = await prisma.admin.findFirst({
+      where: { userId: id }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ message: "Perfil de administrador não encontrado." });
+    }
+
+    const domain = await prisma.domain.findFirst({
+      where: { id: profile.domainId }
+    });
+
+    if (!domain) {
+      return res.status(404).json({ message: "Domínio do administrador não encontrado." });
+    }
+    
+    const filteredUsers = await prisma.user.findMany({
+      where: {
+        email: {
+          endsWith: domain.name,
+        },
+        role: "TEACHER"
+      }
+    });
+
+    const userIds = filteredUsers.map(f => f.id);
+    const teacher = await prisma.teacher.findMany({ where: { userId: { in: userIds} } });
+
+    const teachersIds = teacher.map(t => t.id);
+
+    data = await prisma.class.findMany({
+      where: {
+        teacherId: {
+          in: teachersIds
+        }
+      }
+    });
+  }
+
+  else {
+    return res.status(400).json({ message: "Cargo de usuário inválido." });
   }
 
   return res.status(200).json(data);
@@ -57,7 +128,7 @@ export async function getParticipants(req: Request, res: Response) {
 
   const students = classObj.enrollments.map(e => e.student);
 
-  if (role === "STUDENT") {
+  if (role !== "TEACHER") {
     const teacher = await prisma.teacher.findFirst({ where: { id: classObj.teacherId }});
 
     const teacherData = await prisma.user.findFirst({ where: { id: teacher!.userId }});
@@ -238,8 +309,11 @@ export async function getFile(req: Request, res: Response) {
   else if(type == "POST"){
     file = await prisma.postFile.findFirst({ where: { id: fileId } });
   }
-  else{
+  else if (type == "DELIVERY"){
     file = await prisma.deliveryFile.findFirst({ where: { id: fileId } });
+  }
+  else{
+    return res.status(400).json({ message: "O tipo de download é inválido "});
   }
 
   if (!file) {
@@ -248,24 +322,13 @@ export async function getFile(req: Request, res: Response) {
     });
   }
 
-  const response = await fetch(
-    `https://pub-72880818218741b5952216f9dd9c1f1e.r2.dev/${file.fileKey}`
-  );
+  const response = await fetch(`https://pub-72880818218741b5952216f9dd9c1f1e.r2.dev/${file.fileKey}`);
 
   if (!response.ok || !response.body) {
-    return res.sendStatus(404);
-  }
+    return res.sendStatus(404); }
 
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${file.fileName}"`
-  );
-
-  res.setHeader(
-    "Content-Type",
-    response.headers.get("content-type") ??
-      "application/octet-stream"
-  );
+  res.setHeader("Content-Disposition", `attachment; filename="${file.fileName}"`);
+  res.setHeader("Content-Type", response.headers.get("content-type") ?? "application/octet-stream");
 
   const reader = response.body!.getReader();
 
@@ -276,6 +339,5 @@ export async function getFile(req: Request, res: Response) {
 
     res.write(value);
   }
-
   res.end();
 }
