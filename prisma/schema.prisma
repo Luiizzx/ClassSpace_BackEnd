@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   STUDENT
   TEACHER
+  ADMIN
 }
 
 model User {
@@ -19,12 +20,29 @@ model User {
   name      String
   createdAt DateTime @default(now())
   role      UserRole
+
   student   Student?
   teacher   Teacher?
+  admin     Admin?
 
   posts Post[]
   replies Reply[]
+  resetToken PasswordResetToken?
+
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("password_reset_token")
 }
 
 model Student {
@@ -48,10 +66,10 @@ model Teacher {
 
 model Admin {
   id       Int    @id @default(autoincrement())
-  email    String @unique
-  password String
-  name     String
+  userId   Int    @unique
   domainId Int
+
+  user     User   @relation(fields: [userId], references: [id])
   domain   Domain @relation(fields: [domainId], references: [id])
 
   @@map("admins")
@@ -61,8 +79,19 @@ model Domain {
   id     Int     @id @default(autoincrement())
   name   String  @unique
   admins Admin[]
+  emails AdminsEmails[]
 
   @@map("domains")
+}
+
+model AdminsEmails {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  domainId  Int 
+
+  domain   Domain @relation(fields: [domainId], references: [id])
+
+  @@map("admins_emails")
 }
 
 model Class {
