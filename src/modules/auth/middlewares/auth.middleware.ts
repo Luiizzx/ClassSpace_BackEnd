@@ -1,5 +1,4 @@
 import { env } from 'prisma/config';
-import { prisma } from '../../../database/prisma.js';
 import { type NextFunction, type Request, type Response } from 'express';
 import type { JwtPayload } from '../../../interfaces/jwtPayload.js';
 import jwt from 'jsonwebtoken'
@@ -10,7 +9,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
 
   const token = cookieHeader?.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
 
-  if(!token){ return res.status(401).json({ message: "Usuário não autenticado" }); }
+  if(!token){ return res.status(401).json({ message: "Usuário não autenticado middleware" }); }
 
   try{
     const payload = jwt.verify(token, env("JWT_SECRET")) as JwtPayload; 
@@ -18,6 +17,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     next();    
   }
   catch(error){
-    return res.status(401).json({ message: "Usuário não autenticado" });
+    return res.status(401).json({ message: "Usuário não autenticado middleware" });
   }
 }
