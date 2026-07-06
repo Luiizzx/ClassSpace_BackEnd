@@ -1,28 +1,67 @@
 export const adminPaths = {
-  '/class/search': {
+  '/stats/{classId}': {
     get: {
       tags: ['Admin'],
-      summary: 'Buscar turmas por nome',
+      summary: 'Obter estatísticas de uma turma',
       parameters: [
         {
-          name: 'name',
-          in: 'query',
+          name: 'classId',
+          in: 'path',
           required: true,
-          schema: { type: 'string' }
+          schema: {
+            type: 'integer'
+          }
         },
         {
-          name: 'adminId',
+          name: 'userId',
           in: 'query',
           required: true,
-          schema: { type: 'integer' }
+          schema: {
+            type: 'integer'
+          }
         }
       ],
       responses: {
         200: {
-          description: 'Turmas encontradas com sucesso'
+          description: 'Estatísticas da turma obtidas com sucesso',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  className: {
+                    type: 'string',
+                    example: 'Algoritmos'
+                  },
+                  info: {
+                    type: 'object',
+                    properties: {
+                      totalStudents: {
+                        type: 'integer',
+                        example: 35
+                      },
+                      totalAssignments: {
+                        type: 'integer',
+                        example: 8
+                      },
+                      deliveries: {
+                        type: 'array',
+                        items: {
+                          type: 'object'
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        400: {
+          description: 'Usuário não existe ou não é um administrador'
         },
         404: {
-          description: 'Nenhuma turma encontrada'
+          description: 'Turma não encontrada'
         }
       }
     }
